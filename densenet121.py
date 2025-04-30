@@ -4,6 +4,7 @@ from tensorflow.keras.layers import GlobalAveragePooling2D, Dense, Dropout
 from tensorflow.keras.models import Model
 from tensorflow.keras.preprocessing.image import ImageDataGenerator
 from tensorflow.keras.optimizers import Adam
+from tensorflow.keras.callbacks import EarlyStopping, ModelCheckpoint
 import numpy as np
 import matplotlib.pyplot as plt
 from sklearn.metrics import confusion_matrix, ConfusionMatrixDisplay, classification_report
@@ -53,6 +54,11 @@ test_gen = val_test_datagen.flow_from_directory(
     shuffle=False
 )
 
+# Callbacks
+early_stop = EarlyStopping(monitor='val_loss', patience=3, restore_best_weights=True)
+checkpoint = ModelCheckpoint('best_densenet_model.h5', monitor='val_accuracy', save_best_only=True, mode='max')
+callbacks = [early_stop, checkpoint]
+
 # Model
 base_model = DenseNet121(include_top=False, weights='imagenet', input_shape=(IMG_SIZE, IMG_SIZE, 3))
 x = base_model.output
@@ -66,17 +72,48 @@ for layer in base_model.layers:
     layer.trainable = False
 
 model.compile(optimizer=Adam(1e-3), loss='categorical_crossentropy', metrics=['accuracy'])
-model.fit(train_gen, validation_data=val_gen, epochs=5)
+history1 = model.fit(train_gen, validation_data=val_gen, epochs=5, callbacks=callbacks)
 
 # Phase 2: Fine-tune entire model
 for layer in base_model.layers:
     layer.trainable = True
 
 model.compile(optimizer=Adam(1e-5), loss='categorical_crossentropy', metrics=['accuracy'])
-model.fit(train_gen, validation_data=val_gen, epochs=10)
+history2 = model.fit(train_gen, validation_data=val_gen, epochs=10, callbacks=callbacks)
 
-# Save final model
+# Save final model (even though best is already saved via checkpoint)
 model.save('densenet121_skin_cancer_model.h5')
+
+# Combine histories for plotting
+def combine_histories(h1, h2):
+    history = {}
+    for key in h1.history:
+        history[key] = h1.history[key] + h2.history.get(key, [])
+    return history
+
+full_history = combine_histories(history1, history2)
+
+# Plot Accuracy
+plt.figure(figsize=(10, 4))
+plt.plot(full_history['accuracy'], label='Train Accuracy')
+plt.plot(full_history['val_accuracy'], label='Validation Accuracy')
+plt.title('Model Accuracy')
+plt.xlabel('Epoch')
+plt.ylabel('Accuracy')
+plt.legend()
+plt.grid(True)
+plt.show()
+
+# Plot Loss
+plt.figure(figsize=(10, 4))
+plt.plot(full_history['loss'], label='Train Loss')
+plt.plot(full_history['val_loss'], label='Validation Loss')
+plt.title('Model Loss')
+plt.xlabel('Epoch')
+plt.ylabel('Loss')
+plt.legend()
+plt.grid(True)
+plt.show()
 
 # Evaluation Function
 def evaluate_and_report(generator, set_name):
@@ -95,8 +132,6 @@ def evaluate_and_report(generator, set_name):
     plt.title(f"{set_name} - Confusion Matrix")
     plt.show()
 
-# Validation Evaluation
+# Evaluate on validation and test sets
 evaluate_and_report(val_gen, "Validation Set")
-
-# Test Evaluation
 evaluate_and_report(test_gen, "Test Set")
