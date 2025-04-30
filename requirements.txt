@@ -1,8 +1,11 @@
+tensorflow
 matplotlib
 numpy
 pandas
 Pillow
-torch
-torchvision
+scikit-learn
 seaborn
 scipy
+tqdm
+torch
+torchvision
