@@ -9,3 +9,5 @@ scipy
 tqdm
 torch
 torchvision
+timm
+grad-cam
