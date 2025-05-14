@@ -124,11 +124,11 @@ for epoch in range(EPOCHS):
         best_auc = val_auc
         no_improve_epochs = 0
         torch.save(model.state_dict(), 'best_model.pth')
-        print("✅ Saved new best model!")
+        print("Saved new best model!")
     else:
         no_improve_epochs += 1
         if no_improve_epochs >= PATIENCE:
-            print(f"⛔ Early stopping at epoch {epoch+1}")
+            print(f"Early stopping at epoch {epoch+1}")
             break
 
     scheduler.step()

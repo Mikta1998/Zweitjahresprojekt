@@ -13,19 +13,25 @@ from sklearn.metrics import classification_report, confusion_matrix, ConfusionMa
 from sklearn.utils.class_weight import compute_class_weight
 
 # Force CPU (optional)
-# os.environ["CUDA_VISIBLE_DEVICES"] = "-1"
+os.environ["CUDA_VISIBLE_DEVICES"] = "-1"
+
+"""gpus = tf.config.list_physical_devices('GPU')
+if not gpus:
+    raise RuntimeError("No GPU found. Please install CUDA/cuDNN or use a GPU runtime.")
+else:
+    print(f"Using GPU: {gpus[0].name}")"""
 
 # Configuration
 IMG_SIZE = 224
-BATCH_SIZE = 32
-NUM_CLASSES = 2
+BATCH_SIZE = 10
+NUM_CLASSES = 7
 EPOCHS_PHASE1 = 30
 EPOCHS_PHASE2 = 60
 
 # Paths
-train_dir = 'dataset/split_nested/train_balanced'
-val_dir = 'dataset/split_nested/val'
-test_dir = 'dataset/split_nested/test'
+train_dir = 'dataset/split/train_balanced'
+val_dir = 'dataset/split/val'
+test_dir = 'dataset/split/test'
 
 # Data generators
 train_datagen = ImageDataGenerator(

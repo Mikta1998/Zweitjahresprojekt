@@ -1,4 +1,4 @@
-tensorflow
+tensorflow==2.15
 matplotlib
 numpy
 pandas
