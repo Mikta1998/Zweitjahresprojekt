@@ -4,26 +4,17 @@ import tensorflow as tf
 import matplotlib.pyplot as plt
 
 from tensorflow.keras.applications import DenseNet121
-from tensorflow.keras.layers import GlobalAveragePooling2D, Dense, Dropout
+from tensorflow.keras.layers import GlobalAveragePooling2D, Dense, Dropout, BatchNormalization
 from tensorflow.keras.models import Model
 from tensorflow.keras.preprocessing.image import ImageDataGenerator
 from tensorflow.keras.optimizers import Adam
 from tensorflow.keras.callbacks import EarlyStopping, ModelCheckpoint, ReduceLROnPlateau
+from tensorflow.keras.regularizers import l2
 from sklearn.metrics import classification_report, confusion_matrix, ConfusionMatrixDisplay
-from sklearn.utils.class_weight import compute_class_weight
-
-# Force CPU (optional)
-os.environ["CUDA_VISIBLE_DEVICES"] = "-1"
-
-"""gpus = tf.config.list_physical_devices('GPU')
-if not gpus:
-    raise RuntimeError("No GPU found. Please install CUDA/cuDNN or use a GPU runtime.")
-else:
-    print(f"Using GPU: {gpus[0].name}")"""
 
 # Configuration
 IMG_SIZE = 224
-BATCH_SIZE = 10
+BATCH_SIZE = 32
 NUM_CLASSES = 7
 EPOCHS_PHASE1 = 30
 EPOCHS_PHASE2 = 60
@@ -33,41 +24,23 @@ train_dir = 'dataset/split/train_balanced'
 val_dir = 'dataset/split/val'
 test_dir = 'dataset/split/test'
 
-# Data generators
-train_datagen = ImageDataGenerator(
-    rescale=1./255,
-    rotation_range=20,
-    horizontal_flip=True,
-    zoom_range=0.2,
-    shear_range=0.1,
-    width_shift_range=0.1,
-    height_shift_range=0.1,
-)
+# Data generators (no augmentation)
+datagen = ImageDataGenerator(rescale=1./255)
 
-val_test_datagen = ImageDataGenerator(rescale=1./255)
-
-train_gen = train_datagen.flow_from_directory(
+train_gen = datagen.flow_from_directory(
     train_dir, target_size=(IMG_SIZE, IMG_SIZE), batch_size=BATCH_SIZE,
-    class_mode='categorical'
+    class_mode='categorical', shuffle=True
 )
 
-val_gen = val_test_datagen.flow_from_directory(
+val_gen = datagen.flow_from_directory(
     val_dir, target_size=(IMG_SIZE, IMG_SIZE), batch_size=BATCH_SIZE,
     class_mode='categorical', shuffle=False
 )
 
-test_gen = val_test_datagen.flow_from_directory(
+test_gen = datagen.flow_from_directory(
     test_dir, target_size=(IMG_SIZE, IMG_SIZE), batch_size=BATCH_SIZE,
     class_mode='categorical', shuffle=False
 )
-
-# Compute class weights
-class_weights = compute_class_weight(
-    class_weight='balanced',
-    classes=np.unique(train_gen.classes),
-    y=train_gen.classes
-)
-class_weights = dict(enumerate(class_weights))
 
 # Callbacks
 early_stop = EarlyStopping(monitor='val_loss', patience=10, restore_best_weights=True, verbose=1)
@@ -75,27 +48,31 @@ checkpoint = ModelCheckpoint('best_densenet_model.h5', monitor='val_accuracy', s
 reduce_lr = ReduceLROnPlateau(monitor='val_loss', factor=0.2, patience=5, min_lr=1e-7, verbose=1)
 callbacks = [early_stop, checkpoint, reduce_lr]
 
-# Model setup
+# Model setup with additional Dense layer and regularization
 base_model = DenseNet121(include_top=False, weights='imagenet', input_shape=(IMG_SIZE, IMG_SIZE, 3))
 x = base_model.output
 x = GlobalAveragePooling2D()(x)
 x = Dropout(0.5)(x)
-output = Dense(NUM_CLASSES, activation='softmax')(x)
-model = Model(inputs=base_model.input, outputs=output)
+x = Dense(256, activation='relu', kernel_regularizer=l2(1e-4))(x)
+x = BatchNormalization()(x)
+x = Dropout(0.4)(x)
+output = Dense(NUM_CLASSES, activation='softmax', name='skin_lesion_output')(x)
+
+model = Model(inputs=base_model.input, outputs=output, name="DenseNet121_SkinLesionClassifier")
 
 # Phase 1: Train classifier head
 for layer in base_model.layers:
     layer.trainable = False
 
 model.compile(optimizer=Adam(1e-3), loss='categorical_crossentropy', metrics=['accuracy', tf.keras.metrics.AUC()])
-history1 = model.fit(train_gen, validation_data=val_gen, epochs=EPOCHS_PHASE1, callbacks=callbacks, class_weight=class_weights)
+history1 = model.fit(train_gen, validation_data=val_gen, epochs=EPOCHS_PHASE1, callbacks=callbacks)
 
 # Phase 2: Fine-tune entire model
 for layer in base_model.layers:
     layer.trainable = True
 
 model.compile(optimizer=Adam(1e-5), loss='categorical_crossentropy', metrics=['accuracy', tf.keras.metrics.AUC()])
-history2 = model.fit(train_gen, validation_data=val_gen, epochs=EPOCHS_PHASE2, callbacks=callbacks, class_weight=class_weights)
+history2 = model.fit(train_gen, validation_data=val_gen, epochs=EPOCHS_PHASE2, callbacks=callbacks)
 
 # Save final model
 model.save('densenet121_skin_cancer_final.h5')
@@ -109,7 +86,7 @@ def merge_histories(h1, h2):
 
 history = merge_histories(history1, history2)
 
-# Plot function
+# Plot training history
 def plot_history(hist, metric='accuracy'):
     plt.figure(figsize=(10, 4))
     plt.plot(hist[metric], label='Train')
@@ -123,6 +100,7 @@ def plot_history(hist, metric='accuracy'):
 
 plot_history(history, 'accuracy')
 plot_history(history, 'loss')
+plot_history(history, 'auc')
 
 # Evaluation function
 def evaluate_model(generator, name):
