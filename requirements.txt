@@ -6,6 +6,7 @@ Pillow
 scikit-learn
 seaborn
 ultralytics
+torchcam
 #scipy
 #tqdm
 #torch

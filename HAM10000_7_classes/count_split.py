@@ -1,7 +1,7 @@
 import os
 
 def count_images_per_class(split_root):
-    for split_name in ['train_balanced', 'val', 'test']:
+    for split_name in ['train', 'val', 'test']:
         split_path = os.path.join(split_root, split_name)
         print(f"\n {split_name.upper()}:")
 

@@ -9,74 +9,75 @@ import shutil
 SOURCE_DIR = 'dataset/split/train'
 TARGET_DIR = 'dataset/split/train_balanced'
 
-# Custom target sizes per class
+# Target samples per class
 TARGET_SIZES = {
-    "vasc": 1000,
-    "df": 1000,
+    "vasc": 200,
+    "df": 150,
     "mel": 1000,
-    "nv": 1000,
-    "bcc": 1000,
-    "akiec": 1000,
+    "nv": 1500,
+    "bcc": 500,
+    "akiec": 500,
     "bkl": 1000
 }
 
-def augment_image(image):
-    augmented = []
+def random_augment(image):
+    w, h = image.size
+    img = image.copy()
 
-    # Original
-    augmented.append(image)
+    # Random horizontal flip
+    if random.random() < 0.5:
+        img = img.transpose(Image.FLIP_LEFT_RIGHT)
 
-    # Horizontal flip
-    augmented.append(image.transpose(Image.FLIP_LEFT_RIGHT))
+    # Random rotation
+    angle = random.uniform(-20, 20)
+    img = img.rotate(angle)
 
-    # Rotations (±15°)
-    augmented.append(image.rotate(15))
-    augmented.append(image.rotate(-15))
+    # Random zoom (center crop)
+    zoom_factor = random.uniform(0.9, 1.1)
+    new_w, new_h = int(w * zoom_factor), int(h * zoom_factor)
+    resized = img.resize((new_w, new_h), Image.BICUBIC)
+    left = max(0, (new_w - w) // 2)
+    top = max(0, (new_h - h) // 2)
+    img = resized.crop((left, top, left + w, top + h))
 
-    # Slight zooms
-    zoom_factors = [0.9, 1.1]
-    for factor in zoom_factors:
-        w, h = image.size
-        new_w, new_h = int(w * factor), int(h * factor)
-        resized = image.resize((new_w, new_h), Image.BICUBIC)
-        cropped = resized.crop((0, 0, w, h))
-        augmented.append(cropped)
+    # Random brightness
+    brightness_factor = random.uniform(0.8, 1.2)
+    img = ImageEnhance.Brightness(img).enhance(brightness_factor)
 
-    # Brightness adjustment
-    brightness = ImageEnhance.Brightness(image).enhance(1.2)
-    dimmed = ImageEnhance.Brightness(image).enhance(0.8)
-    augmented.extend([brightness, dimmed])
+    # Random contrast
+    contrast_factor = random.uniform(0.8, 1.2)
+    img = ImageEnhance.Contrast(img).enhance(contrast_factor)
 
-    # Contrast adjustment
-    contrast_up = ImageEnhance.Contrast(image).enhance(1.3)
-    contrast_down = ImageEnhance.Contrast(image).enhance(0.7)
-    augmented.extend([contrast_up, contrast_down])
-
-    return augmented
+    return img
 
 def balance_class(class_name, src_path, dst_path, target_size):
     os.makedirs(dst_path, exist_ok=True)
     images = list(Path(src_path).glob("*.jpg")) + list(Path(src_path).glob("*.png")) + list(Path(src_path).glob("*.jpeg"))
 
-    if len(images) >= target_size:
-        # Undersample
+    orig_len = len(images)
+
+    if orig_len >= target_size:
         sampled = random.sample(images, target_size)
         for i, img_path in enumerate(sampled):
             img = Image.open(img_path).convert('RGB')
             img.save(os.path.join(dst_path, f"{class_name}_{i}.jpg"))
-    else:
-        # Use original + augment to reach target_size
-        count = 0
-        while count < target_size:
-            for img_path in images:
-                img = Image.open(img_path).convert('RGB')
-                for aug in augment_image(img):
-                    if count >= target_size:
-                        break
-                    aug.save(os.path.join(dst_path, f"{class_name}_{count}.jpg"))
-                    count += 1
-                if count >= target_size:
-                    break
+        return orig_len, target_size
+
+    # Augment
+    count = 0
+    while count < target_size:
+        for img_path in images:
+            if count >= target_size:
+                break
+            img = Image.open(img_path).convert('RGB')
+            img.save(os.path.join(dst_path, f"{class_name}_{count}.jpg"))
+            count += 1
+
+            while count < target_size:
+                aug = random_augment(img)
+                aug.save(os.path.join(dst_path, f"{class_name}_{count}.jpg"))
+                count += 1
+    return orig_len, count
 
 def balance_dataset(source_dir, target_dir, target_sizes):
     if os.path.exists(target_dir):
@@ -90,7 +91,8 @@ def balance_dataset(source_dir, target_dir, target_sizes):
             continue
         src_cls_path = os.path.join(source_dir, cls)
         dst_cls_path = os.path.join(target_dir, cls)
-        balance_class(cls, src_cls_path, dst_cls_path, target_sizes[cls])
+        orig, final = balance_class(cls, src_cls_path, dst_cls_path, target_sizes[cls])
+        print(f"Class '{cls}': original={orig}, final={final}")
 
 if __name__ == "__main__":
     balance_dataset(SOURCE_DIR, TARGET_DIR, TARGET_SIZES)

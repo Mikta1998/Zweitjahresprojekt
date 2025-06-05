@@ -2,3 +2,5 @@
 .venvnew
 *.pyc
 dataset
+EfficientNetB3/cam_visuals
+EfficientNetB3/uncertain_predictions

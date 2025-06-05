@@ -3,7 +3,7 @@ import shutil
 import random
 from glob import glob
 
-def split_dataset(source_dir, output_dir, split_ratio=(0.7, 0.2, 0.1), seed=42):
+def split_dataset(source_dir, output_dir, split_ratio=(0.80, 0.10, 0.10), seed=42):
     random.seed(seed)
 
     # Loop over each class folder
