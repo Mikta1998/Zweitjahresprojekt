@@ -65,10 +65,10 @@ model = EfficientNetB3SkinLesion(num_classes).to(device)
 
 # === LOSS, OPTIMIZER, SCHEDULER, LOGGING ===
 if is_balanced:
-    print("✅ Balanced dataset detected — using unweighted loss.")
+    print("Balanced dataset detected — using unweighted loss.")
     criterion = nn.CrossEntropyLoss()
 else:
-    print("⚠️ Imbalanced dataset detected — using class weights.")
+    print("Imbalanced dataset detected — using class weights.")
     class_counts = torch.tensor(sample_counts, dtype=torch.float32)
     weights = 1.0 / class_counts
     weights = weights / weights.sum() * len(class_counts)  # Normalize to average=1
@@ -141,7 +141,7 @@ for epoch in range(num_epochs):
     if val_loss < best_val_loss:
         torch.save(model.state_dict(), "EfficientNetB3/best_model_loss.pt")
         best_val_loss = val_loss
-        print("✅ Saved new best model (by val_loss)")
+        print("Saved new best model (by val_loss)")
         patience_counter = 0
     else:
         patience_counter += 1
@@ -149,10 +149,10 @@ for epoch in range(num_epochs):
     if val_acc > best_val_acc:
         torch.save(model.state_dict(), "EfficientNetB3/best_model_acc.pt")
         best_val_acc = val_acc
-        print("✅ Saved new best model (by val_acc)")
+        print("Saved new best model (by val_acc)")
 
     if patience_counter >= patience:
-        print("🛑 Early stopping triggered.")
+        print("Early stopping triggered.")
         break
 
 writer.close()

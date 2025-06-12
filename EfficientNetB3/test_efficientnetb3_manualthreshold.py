@@ -100,8 +100,8 @@ correct = sum(p == l for p, l in zip(filtered_preds, filtered_labels))
 total = len(filtered_preds)
 acc = correct / total if total > 0 else 0
 
-print(f"\n✅ Accuracy ({'excluding' if exclude_uncertain else 'including'} uncertain): {acc:.4f}")
-print(f"⚠️ Uncertain predictions: {uncertain_count} out of {len(all_labels)}")
+print(f"\nAccuracy ({'excluding' if exclude_uncertain else 'including'} uncertain): {acc:.4f}")
+print(f"Uncertain predictions: {uncertain_count} out of {len(all_labels)}")
 
 print("\n=== Classification Report ===")
 print(classification_report(filtered_labels, filtered_preds, target_names=class_names))
@@ -122,4 +122,4 @@ df = pd.DataFrame({
     "Confidence": all_confidences
 })
 df.to_csv("EfficientNetB3/predictions.csv", index=False)
-print("✅ Saved predictions to EfficientNetB3/predictions.csv")
+print("Saved predictions to EfficientNetB3/predictions.csv")

@@ -7,6 +7,7 @@ scikit-learn
 seaborn
 ultralytics
 torchcam
+streamlit
 #scipy
 #tqdm
 #torch
