@@ -9,7 +9,7 @@ import numpy as np
 import pandas as pd
 import json
 
-# === CONFIG ===
+
 data_dir = "dataset/split"
 model_path = "EfficientNetB3/best_model_acc.pt"
 num_classes = 7

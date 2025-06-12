@@ -8,7 +8,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 
-# === CONFIG ===
+
 data_dir = "dataset/split"
 model_path = "EfficientNetB3/train5/best_model_loss.pt"
 num_classes = 7
@@ -16,22 +16,22 @@ batch_size = 32
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 exclude_uncertain = True # Set to False to include fallback argmax
 
-# === FIXED THRESHOLD ===
+
 uncertainty_threshold = 0.80
 
-# === TRANSFORM ===
+
 transform = transforms.Compose([
     transforms.Resize((300, 300)),
     transforms.ToTensor(),
     transforms.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225])
 ])
 
-# === DATA ===
+
 test_dataset = datasets.ImageFolder(os.path.join(data_dir, "test"), transform)
 test_loader = DataLoader(test_dataset, batch_size=batch_size, shuffle=False)
 class_names = test_dataset.classes
 
-# === MODEL ===
+
 class EfficientNetB3SkinLesion(nn.Module):
     def __init__(self, num_classes):
         super().__init__()
@@ -91,11 +91,11 @@ with torch.no_grad():
                 all_confidences.append(top_confidence)
                 uncertain_count += 1
 
-# === FILTER ===
+
 filtered_preds = [p for p in all_preds if p is not None]
 filtered_labels = [l for p, l in zip(all_preds, all_labels) if p is not None]
 
-# === METRICS ===
+
 correct = sum(p == l for p, l in zip(filtered_preds, filtered_labels))
 total = len(filtered_preds)
 acc = correct / total if total > 0 else 0
@@ -106,7 +106,7 @@ print(f"Uncertain predictions: {uncertain_count} out of {len(all_labels)}")
 print("\n=== Classification Report ===")
 print(classification_report(filtered_labels, filtered_preds, target_names=class_names))
 
-# === CONFUSION MATRIX ===
+
 cm = confusion_matrix(filtered_labels, filtered_preds, labels=list(range(num_classes)))
 disp = ConfusionMatrixDisplay(confusion_matrix=cm, display_labels=class_names)
 disp.plot(cmap='Blues', xticks_rotation=45)
@@ -115,7 +115,7 @@ plt.tight_layout()
 plt.savefig("EfficientNetB3/confusion_matrix_80_loss.png")
 plt.show()
 
-# === SAVE CSV ===
+
 df = pd.DataFrame({
     "True Label": [class_names[i] for i in all_labels],
     "Predicted Label": all_pred_names,

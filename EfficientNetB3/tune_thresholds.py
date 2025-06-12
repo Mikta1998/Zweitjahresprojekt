@@ -7,14 +7,14 @@ from sklearn.metrics import f1_score
 from torchvision import datasets, transforms, models
 from torch.utils.data import DataLoader
 
-# === CONFIG ===
+
 data_dir = "dataset/split"
 model_path = "EfficientNetB3/best_model_acc.pt"
 num_classes = 7
 batch_size = 16
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
-# === TRANSFORM ===
+
 transform = transforms.Compose([
     transforms.Resize((300, 300)),
     transforms.ToTensor(),
@@ -25,7 +25,7 @@ val_dataset = datasets.ImageFolder(os.path.join(data_dir, "val"), transform)
 val_loader = DataLoader(val_dataset, batch_size=batch_size, shuffle=False)
 class_names = val_dataset.classes
 
-# === MODEL ===
+
 class EfficientNetB3SkinLesion(nn.Module):
     def __init__(self, num_classes):
         super().__init__()
@@ -61,7 +61,7 @@ with torch.no_grad():
 all_probs = torch.cat(all_probs).numpy()
 all_labels = torch.cat(all_labels).numpy()
 
-# === THRESHOLD TUNING ===
+
 thresholds = np.linspace(0.1, 0.9, 81)
 best_thresholds = {}
 
@@ -82,4 +82,4 @@ for i, class_name in enumerate(class_names):
 with open("EfficientNetB3/tuned_thresholds.json", "w") as f:
     json.dump(best_thresholds, f, indent=4)
 
-print("\n✅ Saved best thresholds to EfficientNetB3/tuned_thresholds.json")
+print("\nSaved best thresholds to EfficientNetB3/tuned_thresholds.json")
