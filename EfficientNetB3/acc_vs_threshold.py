@@ -8,7 +8,6 @@ import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 
-# === CONFIG ===
 data_dir = "dataset/split"
 model_path = "EfficientNetB3/best_model_acc.pt"
 num_classes = 7
@@ -16,19 +15,18 @@ batch_size = 32
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 exclude_uncertain = True  # Only include confident predictions
 
-# === TRANSFORM ===
 transform = transforms.Compose([
     transforms.Resize((300, 300)),
     transforms.ToTensor(),
     transforms.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225])
 ])
 
-# === DATA ===
+
 test_dataset = datasets.ImageFolder(os.path.join(data_dir, "test"), transform)
 test_loader = DataLoader(test_dataset, batch_size=batch_size, shuffle=False)
 class_names = test_dataset.classes
 
-# === MODEL ===
+
 class EfficientNetB3SkinLesion(nn.Module):
     def __init__(self, num_classes):
         super().__init__()
@@ -50,7 +48,7 @@ model = EfficientNetB3SkinLesion(num_classes).to(device)
 model.load_state_dict(torch.load(model_path))
 model.eval()
 
-# === THRESHOLD SWEEP ===
+
 thresholds = np.arange(0.50, 0.91, 0.05)
 accuracies = []
 uncertains = []
@@ -82,7 +80,7 @@ with torch.no_grad():
                     all_preds.append(None)
                     uncertain_count += 1
 
-        # === FILTER OUT UNCERTAIN ===
+
         filtered_preds = [p for p in all_preds if p is not None]
         filtered_labels = [l for p, l in zip(all_preds, all_labels) if p is not None]
 
@@ -93,7 +91,7 @@ with torch.no_grad():
         accuracies.append(acc)
         uncertains.append(uncertain_count)
 
-# === PLOT ACCURACY VS. THRESHOLD ===
+
 plt.figure(figsize=(8, 5))
 plt.plot(thresholds, accuracies, marker='o', label="Accuracy (Excluding Uncertain)")
 plt.xlabel("Uncertainty Threshold")
@@ -107,7 +105,7 @@ plt.tight_layout()
 plt.savefig("EfficientNetB3/accuracy_vs_threshold_acc.png")
 plt.show()
 
-# === PRINT THRESHOLD STATS ===
+
 print("\n=== Threshold Summary ===")
 for t, acc, u in zip(thresholds, accuracies, uncertains):
     print(f"Threshold {t:.2f} → Accuracy: {acc:.4f}, Uncertain: {u} ({u/len(test_dataset):.1%})")
