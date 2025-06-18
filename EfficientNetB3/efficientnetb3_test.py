@@ -17,7 +17,7 @@ model_path = "EfficientNetB3/train6/best_model_loss.pt"
 num_classes = 7
 batch_size = 8
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-exclude_uncertain = True
+exclude_uncertain = False
 uncertainty_threshold = 0.80
 
 cam_dir = "EfficientNetB3/cam_visuals"
@@ -56,8 +56,8 @@ class EfficientNetB3SkinLesion(nn.Module):
         return self.classifier(x)
 
 model = EfficientNetB3SkinLesion(num_classes).to(device)
-model.load_state_dict(torch.load(model_path, map_location=torch.device("cpu")))
-#model.load_state_dict(torch.load(model_path))  # Make sure you're on a CUDA-enabled machine
+#model.load_state_dict(torch.load(model_path, map_location=torch.device("cpu")))
+model.load_state_dict(torch.load(model_path))  # Make sure you're on a CUDA-enabled machine
 model.eval()
 
 cam_extractor = GradCAM(model, target_layer="features.8")

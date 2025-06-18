@@ -14,8 +14,7 @@ model_path = "EfficientNetB3/train5/best_model_loss.pt"
 num_classes = 7
 batch_size = 32
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-exclude_uncertain = True # Set to False to include fallback argmax
-
+exclude_uncertain = True # Set to False to include uncertain
 
 uncertainty_threshold = 0.80
 
