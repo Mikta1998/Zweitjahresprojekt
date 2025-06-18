@@ -71,7 +71,7 @@ def train_yolo(yolo_path: str, data_path: str, epochs: int = 70):
 def main(data_path_predict, save_results=False, results_path='None', train=False, data_path_train='None', epochs=70):
     start_time = time.strftime("%d%m-%H%M")
 
-    YOLO_PATH = r'F:\KI in den Life Sciences\hautkrebserkennung\YOLO\models\yolov8m-cls.pt'
+    YOLO_PATH = 
 
     if train:
         train_yolo(YOLO_PATH, data_path_train, epochs)
@@ -99,13 +99,13 @@ def main(data_path_predict, save_results=False, results_path='None', train=False
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     # parser arguments for prediction
-    parser.add_argument('--image_path', type=str, default=r'F:\KI in den Life Sciences\dataset3\val')
+    parser.add_argument('--image_path', type=str, default=
     parser.add_argument('--save_results', type=bool, default=False)
     parser.add_argument('--results_path', type=str, default='./results')
 
     # parser arguments for training
     parser.add_argument('--train', type=bool, default=True)
-    parser.add_argument('--data_path', type=str, default=r'F:\KI in den Life Sciences\dataset3')
+    parser.add_argument('--data_path', type=str, default=')
     parser.add_argument('--epochs', type=int, default=70)
     
 
