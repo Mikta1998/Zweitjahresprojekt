@@ -12,14 +12,16 @@ from torchcam.methods import GradCAM
 from torchcam.utils import overlay_mask
 from PIL import Image
 
-data_dir = "dataset/split"
-model_path = "EfficientNetB3/train6/best_model_loss.pt"
-num_classes = 7
-batch_size = 8
-device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-exclude_uncertain = False
-uncertainty_threshold = 0.80
+data_dir = "dataset/split"                                # Directory with test data
+model_path = "EfficientNetB3/train6/best_model_loss.pt"   # Path to the trained model weights
+num_classes = 7                                           # Total number of skin lesion classes
+batch_size = 8                                            # Batch size lowered due to GPU memory issues
+device = torch.device("cuda" if torch.cuda.is_available() else "cpu")  # Use GPU if available
 
+exclude_uncertain = False                                 # Whether to skip uncertain predictions
+uncertainty_threshold = 0.80                              # Softmax threshold for confidence filtering
+
+# Output directories for saving CAMs and uncertain cases
 cam_dir = "EfficientNetB3/cam_visuals"
 uncertain_dir = "EfficientNetB3/uncertain_predictions"
 os.makedirs(cam_dir, exist_ok=True)
@@ -28,15 +30,17 @@ if os.path.exists(uncertain_dir):
 os.makedirs(uncertain_dir)
 
 transform = transforms.Compose([
-    transforms.Resize((300, 300)),
+    transforms.Resize((300, 300)),                    
     transforms.ToTensor(),
-    transforms.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225])
+    transforms.Normalize([0.485, 0.456, 0.406],        
+                         [0.229, 0.224, 0.225])
 ])
 
+# Load dataset and labels
 test_dataset = datasets.ImageFolder(os.path.join(data_dir, "test"), transform)
 test_loader = DataLoader(test_dataset, batch_size=batch_size, shuffle=False)
-class_names = test_dataset.classes
-image_paths = [s[0] for s in test_dataset.samples]
+class_names = test_dataset.classes                      
+image_paths = [s[0] for s in test_dataset.samples]       
 
 class EfficientNetB3SkinLesion(nn.Module):
     def __init__(self, num_classes):
@@ -56,11 +60,11 @@ class EfficientNetB3SkinLesion(nn.Module):
         return self.classifier(x)
 
 model = EfficientNetB3SkinLesion(num_classes).to(device)
-#model.load_state_dict(torch.load(model_path, map_location=torch.device("cpu")))
-model.load_state_dict(torch.load(model_path))  # Make sure you're on a CUDA-enabled machine
-model.eval()
+model.load_state_dict(torch.load(model_path))           
+model.eval()                                             
 
-cam_extractor = GradCAM(model, target_layer="features.8")
+# Initialize GradCAM extractor
+cam_extractor = GradCAM(model, target_layer="features.8")  # Use last conv layer
 
 all_preds = []
 all_labels = []
@@ -84,30 +88,28 @@ for batch_idx, (inputs, labels) in enumerate(test_loader):
         all_labels.append(label)
 
         if top_confidence >= uncertainty_threshold:
+            # Confident prediction then generate GradCAM
             all_preds.append(top_class)
             all_pred_names.append(class_names[top_class])
             all_confidences.append(top_confidence)
 
-            # Load original image (not normalized)
             original_img = Image.open(original_path).convert("RGB").resize((300, 300))
 
-            # Generate Grad-CAM mask
             cam = cam_extractor(class_idx=top_class, scores=outputs[i].unsqueeze(0), retain_graph=True)[0]
             cam = cam.mean(dim=0).unsqueeze(0)
 
-            # Use input for heatmap overlay
             normalized_tensor = inputs[i].cpu()
             input_for_heatmap = to_pil_image(normalized_tensor.clamp(0, 1))
             heatmap = overlay_mask(input_for_heatmap, to_pil_image(cam.cpu(), mode='F'), alpha=0.5)
             heatmap = heatmap.resize((300, 300))
 
-            # Combine original and heatmap
             combined = Image.new("RGB", (600, 300))
             combined.paste(original_img, (0, 0))
             combined.paste(heatmap, (300, 0))
             combined.save(f"{cam_dir}/sample_{batch_idx}_{i}_{class_names[top_class]}.png")
 
         else:
+            # Handle uncertain predictions (record or skip based on setting)
             all_preds.append(top_class if not exclude_uncertain else None)
             all_pred_names.append(class_names[top_class] + " (uncertain)" if not exclude_uncertain else "Uncertain")
             all_confidences.append(top_confidence)
@@ -127,7 +129,7 @@ print(f"Uncertain predictions: {uncertain_count} out of {len(all_labels)}")
 print("\n=== Classification Report ===")
 print(classification_report(filtered_labels, filtered_preds, target_names=class_names))
 
-# Save classification report as PNG
+# === Save classification report as PNG ===
 report_dict = classification_report(filtered_labels, filtered_preds, target_names=class_names, output_dict=True)
 report_df = pd.DataFrame(report_dict).transpose().round(2)
 
@@ -138,7 +140,6 @@ table = ax.table(cellText=report_df.values,
                  rowLabels=report_df.index,
                  loc='center',
                  cellLoc='center')
-
 table.auto_set_font_size(False)
 table.set_fontsize(10)
 table.scale(1.2, 1.2)
@@ -148,10 +149,11 @@ plt.tight_layout()
 plt.savefig("EfficientNetB3/classification_report.png", dpi=300)
 plt.close()
 
-# Save confusion matrix
+# Confusion Matrix + Class Descriptions
 cm = confusion_matrix(filtered_labels, filtered_preds, labels=list(range(num_classes)))
 disp = ConfusionMatrixDisplay(confusion_matrix=cm, display_labels=class_names)
 disp.plot(cmap='Blues', xticks_rotation=45)
+
 class_descriptions = {
     "akiec": "AKIEC: (Aktinische Keratose)",
     "bcc":   "BCC: (Basalzellkarzinom)",
@@ -162,12 +164,10 @@ class_descriptions = {
     "vasc":  "VASC: (Vaskuläre Läsionen)"
 }
 
-# Create plot with space on the left
 fig, ax = plt.subplots(figsize=(10, 8))
 disp = ConfusionMatrixDisplay(confusion_matrix=cm, display_labels=class_names)
 disp.plot(cmap='Blues', xticks_rotation=45, ax=ax, colorbar=True)
 
-# Add class description legend on the left
 description_text = "\n".join([class_descriptions[k] for k in class_names])
 plt.gcf().text(-0.4, 0.5, description_text, fontsize=10, va='center')
 
@@ -176,11 +176,11 @@ plt.tight_layout()
 plt.savefig("EfficientNetB3/confusion_matrix_with_labels_left.png", dpi=300, bbox_inches='tight')
 plt.show()
 
-# Save predictions to CSV
+# Save predictions to CSV 
 df = pd.DataFrame({
-    "True Label": [class_names[i] for i in all_labels],
-    "Predicted Label": all_pred_names,
-    "Confidence": all_confidences
+    "True Label": [class_names[i] for i in all_labels],     # Actual label
+    "Predicted Label": all_pred_names,                      # Predicted or uncertain
+    "Confidence": all_confidences                           # Max softmax value
 })
 df.to_csv("EfficientNetB3/predictions.csv", index=False)
 print("Saved predictions to EfficientNetB3/predictions.csv")
