@@ -4,3 +4,5 @@
 dataset
 EfficientNetB3/cam_visuals
 EfficientNetB3/uncertain_predictions
+EfficientNetB4/cam_visuals
+EfficientNetB4/uncertain_predictions

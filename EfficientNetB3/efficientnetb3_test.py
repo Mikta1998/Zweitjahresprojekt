@@ -18,7 +18,7 @@ num_classes = 7                                           # Total number of skin
 batch_size = 8                                            # Batch size lowered due to GPU memory issues
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")  # Use GPU if available
 
-exclude_uncertain = False                                 # Whether to skip uncertain predictions
+exclude_uncertain = True                                 # Whether to skip uncertain predictions
 uncertainty_threshold = 0.80                              # Softmax threshold for confidence filtering
 
 # Output directories for saving CAMs and uncertain cases
@@ -100,7 +100,7 @@ for batch_idx, (inputs, labels) in enumerate(test_loader):
 
             normalized_tensor = inputs[i].cpu()
             input_for_heatmap = to_pil_image(normalized_tensor.clamp(0, 1))
-            heatmap = overlay_mask(input_for_heatmap, to_pil_image(cam.cpu(), mode='F'), alpha=0.5)
+            heatmap = overlay_mask(input_for_heatmap, to_pil_image(cam.cpu(), mode='F'), alpha=0.97)
             heatmap = heatmap.resize((300, 300))
 
             combined = Image.new("RGB", (600, 300))
@@ -132,6 +132,10 @@ print(classification_report(filtered_labels, filtered_preds, target_names=class_
 # === Save classification report as PNG ===
 report_dict = classification_report(filtered_labels, filtered_preds, target_names=class_names, output_dict=True)
 report_df = pd.DataFrame(report_dict).transpose().round(2)
+
+# Drops the 'accuracy' row
+if 'accuracy' in report_df.index:
+    report_df = report_df.drop(index='accuracy')
 
 fig, ax = plt.subplots(figsize=(10, 6))
 ax.axis('off')
