@@ -45,7 +45,7 @@ st.markdown("""
     </style>
 """, unsafe_allow_html=True)
 
-st.markdown("<div class='title'>Skin Lesion Classifier</div>", unsafe_allow_html=True)
+st.markdown("<div class='title'>Skin Seer AI</div>", unsafe_allow_html=True)
 st.markdown("<div class='subtitle'>Upload a dermoscopic image and get a model prediction.</div>", unsafe_allow_html=True)
 
 st.info("**Disclaimer:** This app is for entertainment and educational use only. Not for medical use.")
