@@ -1,13 +1,4 @@
-matplotlib==3.10.1
-numpy==1.26.4
-pandas==2.2.3
-Pillow==11.1.0
-torchcam==0.4.0
 streamlit==1.45.1
-#scipy
-#tqdm
-#torch
-torchvision
-#timm
-#grad-cam
-
+torch==2.3.0
+torchvision==0.18.0
+Pillow==11.1.0
