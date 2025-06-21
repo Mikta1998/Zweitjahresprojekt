@@ -127,6 +127,9 @@ report_df = pd.DataFrame(report_dict).transpose().round(2)
 if 'accuracy' in report_df.index:
     report_df = report_df.drop(index='accuracy')
 
+if 'macro avg' in report_df.index:
+    report_df = report_df.drop(index='macro avg')
+
 fig, ax = plt.subplots(figsize=(10, 6))
 ax.axis('off')
 table = ax.table(cellText=report_df.values,

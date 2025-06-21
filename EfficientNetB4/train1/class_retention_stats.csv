@@ -1,0 +1,8 @@
+Class,Total Samples,Confident Predictions,Retained (%)
+nv,671,609,90.76
+mel,112,93,83.04
+bkl,111,87,78.38
+bcc,52,48,92.31
+akiec,34,30,88.24
+vasc,15,14,93.33
+df,12,9,75.0
