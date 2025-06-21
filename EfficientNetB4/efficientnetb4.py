@@ -14,7 +14,7 @@ num_classes = 7
 batch_size = 16
 learning_rate = 1e-4
 num_epochs = 50
-patience = 15
+patience = 10
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 # === Transforms for EfficientNet‑B4 ===
