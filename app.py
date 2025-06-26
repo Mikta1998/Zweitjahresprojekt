@@ -36,8 +36,13 @@ st.markdown("""
         .title { text-align: center; font-size: 36px; font-weight: bold; margin-bottom: 0.5em; }
         .subtitle { text-align: center; font-size: 16px; color: gray; margin-bottom: 2em; }
         .prediction-card {
-            padding: 20px; border-radius: 10px; background-color: #ffffff;
-            box-shadow: 0px 4px 10px rgba(0,0,0,0.05); margin-top: 20px; text-align: center;
+            padding: 20px; 
+            border-radius: 10px; 
+            background-color: #ffffff;
+            box-shadow: 0px 4px 10px rgba(0,0,0,0.05); 
+            margin-top: 20px; 
+            text-align: center;
+            color: #222222; /* Ensures all text inside is visible */
         }
         .malignant { color: #b00020; font-weight: bold; }
         .benign { color: #0f9d58; font-weight: bold; }
